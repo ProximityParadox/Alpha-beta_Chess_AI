@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link rel="stylesheet" href="css/chessboard-1.0.0.min.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="js/chessboard-1.0.0.min.js"></script>
+    <script src="./chess.js"></script>
+
+</head>
+<body>
+  <div id="myBoard" style="width: 800px"></div>
+
+<script>
+
+var config = {
+  draggable: true,
+  position: 'start',
+
+}
+var board = Chessboard('myBoard', config)
+
+const pawn_value = 1
+const knight_value = 3
+const bishop_value = 3
+const rook_value = 5
+const queen_value = 9
+const king_value = 99999
+
+
+
+var chess = new Chess(
+"2b3N1/8/1r2pN1b/1p2kp2/1P1R4/8/4K3/6Q1 w - - 0 1"
+)
+
+board.position(chess.fen())
+
+function ABnegamax(depth, alpha, beta) {
+    //if the maximum depth has been reached, return the evaluation of the current position and an empty move history.
+  if (depth == 0) {
+    return [evaluate(), null];
+  }
+  //generate all possible moves
+  let moves = chess.moves();
+
+
+    //create maxscore and bestmove variables. maxscore variable is negative infinity to allow any number higher than it to overwrite later (which should be all since even losing king is -99999 and not -infinity)
+  let maxScore = Number.NEGATIVE_INFINITY;
+  let bestMove = null;
+
+  for (let i = 0; i < moves.length; i++) {
+        //make the move and evaluate, and continue recursively to do this until we hit a depth of 0 (which is why we remove a depth of 1 each time until it has gone through all movers)
+    chess.move(moves[i]);
+    let [score, _] = ABnegamax(depth - 1, -beta, -alpha);
+    score = -score;
+    chess.undo();
+    //If the new move is better than the current best move, update the maximum score and best move.
+    if (score > maxScore) {
+          //If the score is greater than or equal to beta, prune the rest of the moves.
+
+      maxScore = score;
+      bestMove = moves[i];
+    }
+          // If the new move is better than the current best move, update the maximum score and best move.
+        alpha = Math.max(alpha, score);
+    if (alpha >= beta) {
+      break;
+    }
+  }
+        // Return the maximum score and an array containing the best move.
+  return [maxScore, bestMove];
+}
+
+function count_number_of(piece) {
+  ascii = chess.ascii();
+  post_edit = ascii.replaceAll(piece, "");
+  return ascii.length - post_edit.length;
+}
+
+function evaluate() {
+  let w_mat_val = 0;
+  let b_mat_val = 0;
+
+  w_mat_val += count_number_of("p") * pawn_value;
+  w_mat_val += count_number_of("r") * rook_value;
+  w_mat_val += (count_number_of("b") - 1) * bishop_value;
+  w_mat_val += count_number_of("n") * knight_value;
+  w_mat_val += count_number_of("q") * queen_value;
+  w_mat_val += count_number_of("k") * king_value;
+
+  b_mat_val += count_number_of("P") * pawn_value;
+  b_mat_val += count_number_of("R") * rook_value;
+  b_mat_val += count_number_of("B") * bishop_value;
+  b_mat_val += count_number_of("N") * knight_value;
+  b_mat_val += count_number_of("Q") * queen_value;
+  b_mat_val += count_number_of("K") * king_value;
+
+  if (chess.turn() == "w") {
+    return w_mat_val - b_mat_val;
+  } else {
+    return b_mat_val - w_mat_val;
+  }
+}
+
+let pre_test = Date.now()/1000;
+let [score, bestMove] = ABnegamax(4, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+console.log("Best Move: ", bestMove, " Score: ", score);
+let post_test = Date.now()/1000;
+
+console.log("it took a total of " + (post_test-pre_test) + " seconds");
+
+chess.move(bestMove);
+
+
+
+</script>
+</body>
+</html>
+
+

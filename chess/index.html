@@ -1,0 +1,153 @@
+<html>
+	<head>
+		<!--<script type="application/javascript" src="./dist/bundle.js"></script> -->
+
+		<link rel="stylesheet" href="css/chessboard-1.0.0.min.css">
+		<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+		<script src="js/chessboard-1.0.0.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script>
+	</head>
+
+	<body>
+
+		<div id="myBoard" style="width: 400px"></div>
+
+		<script>
+
+			
+
+var board = null
+var chess = new Chess()
+
+const pawn_value = 1
+const knight_value = 3
+const bishop_value = 3
+const rook_value = 5
+const queen_value = 9
+const king_value = 9999
+
+function ABnegamax(depth, alpha, beta) {
+  if (depth == 0) {
+    return [evaluate(), null];
+  }
+
+  let moves = chess.moves();
+
+  let maxScore = Number.NEGATIVE_INFINITY;
+  let bestMove = null;
+
+  for (let i = 0; i < moves.length; i++) {
+    chess.move(moves[i]);
+    let [score, _] = ABnegamax(depth - 1, -beta, -alpha);
+    score = -score;
+    chess.undo();
+
+    if (score > maxScore) {
+      maxScore = score;
+      bestMove = moves[i];
+    }
+
+    alpha = Math.max(alpha, score);
+
+    if (alpha >= beta) {
+      break;
+    }
+  }
+
+  return [maxScore, bestMove];
+}
+
+function count_number_of(piece) {
+  ascii = chess.ascii();
+  post_edit = ascii.replaceAll(piece, "");
+  return ascii.length - post_edit.length;
+}
+
+function evaluate() {
+  let w_mat_val = 0;
+  let b_mat_val = 0;
+
+  w_mat_val += count_number_of("p") * pawn_value;
+  w_mat_val += count_number_of("r") * rook_value;
+  w_mat_val += (count_number_of("b") - 1) * bishop_value;
+  w_mat_val += count_number_of("n") * knight_value;
+  w_mat_val += count_number_of("q") * queen_value;
+  w_mat_val += count_number_of("k") * king_value;
+
+  b_mat_val += count_number_of("P") * pawn_value;
+  b_mat_val += count_number_of("R") * rook_value;
+  b_mat_val += count_number_of("B") * bishop_value;
+  b_mat_val += count_number_of("N") * knight_value;
+  b_mat_val += count_number_of("Q") * queen_value;
+  b_mat_val += count_number_of("K") * king_value;
+
+  if (chess.turn() == "w") {
+    return w_mat_val - b_mat_val;
+  } else {
+    return b_mat_val - w_mat_val;
+  }
+}
+
+function makeit(){
+
+let [score, bestMove] = ABnegamax(3, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+console.log("Best Move: ", bestMove, " Score: ", score);
+let post_test = Date.now()/1000;
+
+
+chess.move(bestMove);
+
+board.position(chess.fen())
+}
+
+function onDragStart (source, piece, position, orientation) {
+  // do not pick up pieces if the game is over
+  if (chess.game_over()) return false
+
+  // only pick up pieces for White
+ // if (piece.search(/^b/) !== -1) return false
+}
+
+
+function onDrop (source, target) {
+  // see if the move is legal
+  var move = chess.move({
+    from: source,
+    to: target,
+    promotion: 'q' // NOTE: always promote to a queen for example simplicity
+  })
+
+  // illegal move
+  if (move === null) return 'snapback'
+
+  // make random legal move for black
+  window.setTimeout(makeit(), 250)
+}
+
+
+// update the board position after the piece snap
+// for castling, en passant, pawn promotion
+function onSnapEnd () {
+  board.position(chess.fen())
+}
+
+var config = {
+  draggable: true,
+  position: 'start',
+  onDragStart: onDragStart,
+  onDrop: onDrop,
+  onSnapEnd: onSnapEnd
+}
+board = Chessboard('myBoard', config)
+var board = Chessboard('myBoard', config)
+
+
+
+
+		</script>
+	</body>
+
+
+</html>
+
+
